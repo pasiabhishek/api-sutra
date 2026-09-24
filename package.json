@@ -1,0 +1,32 @@
+{
+  "name": "master-api-url",
+  "version": "1.0.0",
+  "description": "A simple Axios-based API utility for fetching JSON data.",
+  "type": "module",
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "vitest",
+    "test:watch": "vitest --watch"
+  },
+  "keywords": [
+    "api",
+    "axios",
+    "api-url",
+    "json",
+    "javascript",
+    "react",
+    "vite"
+  ],
+  "author": "Pasi Abhishek",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.12.2"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}
