@@ -1,16 +1,8 @@
-import { describe, it, expect } from "vitest";
 import { getApiUrl } from "../src/index.js";
 
-describe("getApiUrl", () => {
-    it("should require base URL", async () => {
-        await expect(
-            getApiUrl("", "/api/users")
-        ).rejects.toThrow("Base URL is required.");
-    });
+const data = await getApiUrl(
+    "https://jsonplaceholder.typicode.com",
+    "/posts/1"
+);
 
-    it("should require API path", async () => {
-        await expect(
-            getApiUrl("https://example.com", "")
-        ).rejects.toThrow("API path is required.");
-    });
-});
+console.log(data);

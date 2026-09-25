@@ -2,16 +2,6 @@
   "name": "master-api-url",
   "version": "1.0.0",
   "description": "A simple Axios-based API utility for fetching JSON data.",
-  "type": "module",
-  "main": "./src/index.js",
-  "module": "./src/index.js",
-  "exports": {
-    ".": "./src/index.js"
-  },
-  "scripts": {
-    "test": "vitest",
-    "test:watch": "vitest --watch"
-  },
   "keywords": [
     "api",
     "axios",
@@ -21,12 +11,33 @@
     "react",
     "vite"
   ],
-  "author": "Pasi Abhishek",
+  "homepage": "https://github.com/pasiabhishek/master-api-url#readme",
+  "bugs": {
+    "url": "https://github.com/pasiabhishek/master-api-url/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pasiabhishek/master-api-url.git"
+  },
   "license": "MIT",
+  "author": "Pasi Abhishek",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "main": "./src/index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "vitest",
+    "test:watch": "vitest --watch"
+  },
   "dependencies": {
     "axios": "^1.12.2"
   },
   "devDependencies": {
     "vitest": "^3.2.4"
-  }
+  },
+  "module": "./src/index.js"
 }
