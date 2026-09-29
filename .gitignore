@@ -4,3 +4,9 @@ node_modules/
 coverage/
 dist/
 npm-debug.log*
+
+
+node_modules/
+.env
+.git/
+unnecessary files
