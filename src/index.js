@@ -1,28 +1,40 @@
 import axios from "axios";
 
 export async function getApiUrl(baseUrl, path, options = {}) {
-    if (!baseUrl) {
-        throw new Error("Base URL is required.");
-    }
+  // Validate base URL
+  if (!baseUrl) {
+    throw new Error("Base URL is required.");
+  }
 
-    if (!path) {
-        throw new Error("API path is required.");
-    }
+  // Validate API path
+  if (!path) {
+    throw new Error("API path is required.");
+  }
 
-    const cleanBaseUrl = String(baseUrl).replace(/\/+$/, "");
-    const cleanPath = String(path).replace(/^\/+/, "");
+  // Clean base URL and API path
+  const cleanBaseUrl = String(baseUrl).replace(/\/+$/, "");
+  const cleanPath = String(path).replace(/^\/+/, "");
 
-    const url = `${cleanBaseUrl}/${cleanPath}`;
+  // Build complete URL
+  const url = `${cleanBaseUrl}/${cleanPath}`;
 
-    try {
-        const response = await axios.get(url, options);
+  try {
+    // API request handled internally
+    const response = await axios.get(url, options);
 
-        return response.data;
-    } catch (error) {
-        throw new Error(
-            error.response?.data?.message ||
-            error.message ||
-            "API request failed."
-        );
-    }
+    // Return only the API data
+    return response.data;
+  } catch (error) {
+    // Handle error internally
+    console.error(
+      "master-api-url:",
+      error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "API request failed."
+    );
+
+    // Return null when request fails
+    return null;
+  }
 }
