@@ -1,32 +1,58 @@
 # master-api-url
 
-A lightweight and simple utility for making **GET API requests with Axios**.
+A lightweight and simple API client built on top of **Axios** for making HTTP API requests with a clean and reusable interface.
 
-`master-api-url` combines a base API URL and endpoint path, performs the GET request internally using Axios, handles request errors, and directly returns the API response data.
+`master-api-url` lets you configure your API once and then use simple methods like:
+
+```js
+api.get("/users");
+api.post("/users", data);
+api.put("/users/1", data);
+api.patch("/users/1", data);
+api.delete("/users/1");
+```
 
 The goal is simple:
 
 ```js
-const data = await getApiUrl(baseUrl, path);
+import { createApiClient } from "master-api-url";
+
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+});
+
+const users = await api.get("/users");
 ```
 
-No need to write Axios or `fetch` request code yourself.
+You configure the base URL once instead of repeatedly writing complete API URLs.
+
+---
 
 ## Features
 
-* Simple GET API requests
-* Uses Axios internally
-* No need to write `fetch()`
-* No need to use Axios directly
+* Simple and reusable API client
+* Built on Axios
+* Supports `GET`
+* Supports `POST`
+* Supports `PUT`
+* Supports `PATCH`
+* Supports `DELETE`
+* Configure the base URL once
 * Automatically handles `/` between base URL and endpoint
 * Directly returns `response.data`
 * Supports Axios request options
-* Handles API request errors internally
-* Returns `null` when a request fails
-* Validates the base URL and API path
+* Optional Bearer token authentication
+* Configurable request timeout
+* Custom default headers
+* Standardized API errors
+* Preserves HTTP status and response data on errors
 * Promise-based
 * Lightweight
-* Works with modern JavaScript and ES Modules
+* Works with modern JavaScript
+* ES Module support
+* Keeps the original `getApiUrl()` helper for backward compatibility
+
+---
 
 ## Installation
 
@@ -36,23 +62,34 @@ Install `master-api-url` using npm:
 npm install master-api-url
 ```
 
+---
+
 ## Usage
 
 ### Import
 
 ```js
-import { getApiUrl } from "master-api-url";
+import { createApiClient } from "master-api-url";
 ```
 
-### Basic Example
+### Create an API Client
 
 ```js
-const data = await getApiUrl(
-  "https://api.example.com",
-  "/users"
-);
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+});
+```
 
-console.log(data);
+The `baseURL` is configured once and can then be reused for every request.
+
+---
+
+## GET Request
+
+```js
+const users = await api.get("/users");
+
+console.log(users);
 ```
 
 Internally, the package makes:
@@ -61,7 +98,7 @@ Internally, the package makes:
 GET https://api.example.com/users
 ```
 
-and returns:
+and directly returns:
 
 ```js
 response.data
@@ -79,10 +116,7 @@ For example, if the API returns:
 then:
 
 ```js
-const data = await getApiUrl(
-  "https://api.example.com",
-  "/users"
-);
+const data = await api.get("/users");
 ```
 
 will give you:
@@ -94,26 +128,86 @@ will give you:
 }
 ```
 
+---
+
+## POST Request
+
+Use `post()` to send data to an API.
+
+```js
+const user = await api.post("/users", {
+  name: "Pasi Abhishek",
+  email: "pasi@example.com",
+});
+
+console.log(user);
+```
+
+Internally:
+
+```js
+axios.post("/users", data, options);
+```
+
+The method returns:
+
+```js
+response.data
+```
+
+---
+
+## PUT Request
+
+Use `put()` when updating an existing resource.
+
+```js
+const user = await api.put("/users/1", {
+  name: "Pasi Abhishek",
+  email: "pasi@example.com",
+});
+```
+
+---
+
+## PATCH Request
+
+Use `patch()` when partially updating an existing resource.
+
+```js
+const user = await api.patch("/users/1", {
+  name: "Master Aazam",
+});
+```
+
+---
+
+## DELETE Request
+
+Use `delete()` to remove a resource.
+
+```js
+const result = await api.delete("/users/1");
+
+console.log(result);
+```
+
+---
+
 ## Endpoint With or Without `/`
 
-You can provide the endpoint with or without a leading slash.
+You can provide an endpoint with or without a leading slash.
 
 ### With a leading slash
 
 ```js
-const data = await getApiUrl(
-  "https://api.example.com",
-  "/users"
-);
+const users = await api.get("/users");
 ```
 
 ### Without a leading slash
 
 ```js
-const data = await getApiUrl(
-  "https://api.example.com",
-  "users"
-);
+const users = await api.get("users");
 ```
 
 Both produce:
@@ -122,111 +216,200 @@ Both produce:
 https://api.example.com/users
 ```
 
-The package automatically removes unnecessary trailing and leading slashes before constructing the URL.
+The package automatically normalizes the endpoint path.
+
+---
 
 ## Query Parameters
 
-Query parameters can be included directly in the API path:
+You can pass Axios request options to any request.
+
+For example:
 
 ```js
-const data = await getApiUrl(
-  "https://api.example.com",
-  "/users?page=1&limit=10"
-);
-
-console.log(data);
+const users = await api.get("/users", {
+  params: {
+    page: 1,
+    limit: 10,
+  },
+});
 ```
 
-The resulting request is:
+Axios will generate the appropriate query string.
+
+The request becomes:
 
 ```text
 GET https://api.example.com/users?page=1&limit=10
 ```
 
-## Axios Request Options
+---
 
-The third argument can be used to pass Axios request configuration.
+## Request Headers
 
-```js
-const data = await getApiUrl(
-  "https://api.example.com",
-  "/users",
-  {
-    headers: {
-      Authorization: "Bearer YOUR_TOKEN"
-    }
-  }
-);
-```
-
-The `options` object is passed directly to:
+You can provide request-specific headers:
 
 ```js
-axios.get(url, options);
+const users = await api.get("/users", {
+  headers: {
+    Authorization: "Bearer YOUR_TOKEN",
+  },
+});
 ```
 
-This allows you to provide supported Axios GET request configuration such as:
+The options object is passed to Axios.
+
+This means you can use supported Axios request configuration such as:
 
 * `headers`
 * `params`
 * `timeout`
 * `withCredentials`
-* Other supported Axios request options
+* Other Axios request options
 
-### Example With Headers
+---
 
-```js
-const data = await getApiUrl(
-  "https://api.example.com",
-  "/users",
-  {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  }
-);
-```
+## Authentication
 
-### Example With Query Parameters
-
-You can also use Axios `params`:
+You can configure a Bearer token when creating the API client.
 
 ```js
-const data = await getApiUrl(
-  "https://api.example.com",
-  "/users",
-  {
-    params: {
-      page: 1,
-      limit: 10
-    }
-  }
-);
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+  token: "YOUR_TOKEN",
+});
 ```
 
-Axios will generate the appropriate query string.
+The client automatically adds:
+
+```http
+Authorization: Bearer YOUR_TOKEN
+```
+
+to requests.
+
+You can then simply write:
+
+```js
+const profile = await api.get("/profile");
+```
+
+without manually adding the Authorization header to every request.
+
+---
+
+## Custom Headers
+
+You can configure default headers when creating the client:
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+  headers: {
+    "X-App-Version": "1.0.0",
+  },
+});
+```
+
+These headers are used as default headers for the API client.
+
+---
+
+## Request Timeout
+
+The default request timeout is:
+
+```text
+10000 ms
+```
+
+which is 10 seconds.
+
+You can customize it:
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+  timeout: 5000,
+});
+```
+
+---
 
 ## Function
 
 ```js
-getApiUrl(baseUrl, path, options)
+createApiClient(config)
 ```
 
-### Parameters
+### Configuration
 
-| Parameter | Type     | Default | Description                     |
-| --------- | -------- | ------- | ------------------------------- |
-| `baseUrl` | `string` | —       | Base URL of the API             |
-| `path`    | `string` | —       | API endpoint path               |
-| `options` | `object` | `{}`    | Axios GET request configuration |
+| Property  | Type     | Default | Description                          |
+| --------- | -------- | ------: | ------------------------------------ |
+| `baseURL` | `string` |       — | Base URL of the API                  |
+| `token`   | `string` |       — | Optional Bearer authentication token |
+| `timeout` | `number` | `10000` | Request timeout in milliseconds      |
+| `headers` | `object` |    `{}` | Default request headers              |
+
+---
+
+## API Methods
+
+After creating the client:
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+});
+```
+
+you get:
+
+```js
+api.get()
+api.post()
+api.put()
+api.patch()
+api.delete()
+```
+
+### GET
+
+```js
+api.get(path, options)
+```
+
+### POST
+
+```js
+api.post(path, data, options)
+```
+
+### PUT
+
+```js
+api.put(path, data, options)
+```
+
+### PATCH
+
+```js
+api.patch(path, data, options)
+```
+
+### DELETE
+
+```js
+api.delete(path, options)
+```
+
+---
 
 ## Return Value
 
-`getApiUrl()` returns a Promise.
+All API methods return a Promise.
 
-### Successful Request
-
-When the request succeeds, the function returns:
+When the request succeeds, the methods return:
 
 ```js
 response.data
@@ -235,10 +418,7 @@ response.data
 For example:
 
 ```js
-const users = await getApiUrl(
-  "https://api.example.com",
-  "/users"
-);
+const users = await api.get("/users");
 ```
 
 If the API returns:
@@ -271,45 +451,71 @@ then `users` directly contains:
 ]
 ```
 
-### Failed Request
+---
 
-If the Axios request fails, the error is handled internally.
+## Error Handling
 
-The function logs the error:
-
-```text
-master-api-url: API request failed.
-```
-
-and returns:
-
-```js
-null
-```
+API errors are normalized by `master-api-url`.
 
 Example:
 
 ```js
-const users = await getApiUrl(
-  "https://api.example.com",
-  "/users"
-);
-
-if (users === null) {
-  console.log("Unable to fetch users.");
+try {
+  const users = await api.get("/users");
+} catch (error) {
+  console.log(error.message);
+  console.log(error.status);
+  console.log(error.data);
 }
 ```
 
-You do not need to write a request-level `try/catch` for normal HTTP/request failures.
+The error provides:
+
+```js
+error.message
+error.status
+error.data
+error.response
+```
+
+For example, an API returning:
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+can be handled as:
+
+```js
+try {
+  const profile = await api.get("/profile");
+} catch (error) {
+  console.log(error.message);
+}
+```
+
+Output:
+
+```text
+Unauthorized
+```
+
+Unlike the original `getApiUrl()` implementation, the new API client **throws the normalized error** instead of silently returning `null`.
+
+This allows the application to decide how the error should be handled.
+
+---
 
 ## Validation Errors
 
-The package validates `baseUrl` and `path` before making the request.
+The package validates the API configuration before making requests.
 
 ### Missing Base URL
 
 ```js
-await getApiUrl("", "/users");
+createApiClient();
 ```
 
 throws:
@@ -321,10 +527,11 @@ Error: Base URL is required.
 ### Missing API Path
 
 ```js
-await getApiUrl(
-  "https://api.example.com",
-  ""
-);
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+});
+
+await api.get("");
 ```
 
 throws:
@@ -333,7 +540,9 @@ throws:
 Error: API path is required.
 ```
 
-These are input validation errors and are intentionally thrown before Axios is called.
+These are input validation errors and are thrown before the API request is made.
+
+---
 
 ## React Example
 
@@ -341,20 +550,25 @@ These are input validation errors and are intentionally thrown before Axios is c
 
 ```jsx
 import { useEffect, useState } from "react";
-import { getApiUrl } from "master-api-url";
+import { createApiClient } from "master-api-url";
+
+const api = createApiClient({
+  baseURL: import.meta.env.VITE_API_URL,
+});
 
 function Users() {
   const [users, setUsers] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     async function loadUsers() {
-      const data = await getApiUrl(
-        import.meta.env.VITE_API_URL,
-        "/api/users"
-      );
+      try {
+        const data = await api.get("/api/users");
 
-      if (data !== null) {
         setUsers(data);
+      } catch (error) {
+        console.error(error);
+        setError(error.message);
       }
     }
 
@@ -363,6 +577,10 @@ function Users() {
 
   return (
     <div>
+      <h1>Users</h1>
+
+      {error && <p>{error}</p>}
+
       {users.map((user) => (
         <p key={user._id}>
           {user.fullName}
@@ -375,117 +593,186 @@ function Users() {
 export default Users;
 ```
 
-If your API response is:
-
-```json
-{
-  "success": true,
-  "users": []
-}
-```
-
-then use:
-
-```js
-if (data !== null) {
-  setUsers(data.users);
-}
-```
+---
 
 ## Using Environment Variables
 
-For Vite projects, you can store your API base URL in `.env`:
+For Vite projects, store your API base URL in `.env`:
 
 ```env
 VITE_API_URL=https://api.example.com
 ```
 
-Then:
+Then create your client:
 
 ```js
-import { getApiUrl } from "master-api-url";
+import { createApiClient } from "master-api-url";
 
-const data = await getApiUrl(
-  import.meta.env.VITE_API_URL,
-  "/api/users"
-);
+const api = createApiClient({
+  baseURL: import.meta.env.VITE_API_URL,
+});
 ```
+
+Now use it throughout your application:
+
+```js
+const users = await api.get("/api/users");
+```
+
+---
 
 ## Real-World Example
 
 For an API such as ArtistHood:
 
 ```js
-import { getApiUrl } from "master-api-url";
+import { createApiClient } from "master-api-url";
 
-const artists = await getApiUrl(
-  "https://artisthood-e6a5.onrender.com",
-  "/api/artists"
-);
+const api = createApiClient({
+  baseURL: "https://artisthood-e6a5.onrender.com",
+});
+```
+
+Then:
+
+```js
+const artists = await api.get("/api/artists");
 
 console.log(artists);
 ```
 
-If the API returns an array of artists:
+POST example:
 
 ```js
-[
-  {
-    _id: "...",
-    fullName: "Artist Name"
-  }
-]
+const artist = await api.post("/api/artists", {
+  fullName: "Artist Name",
+});
 ```
 
-then:
+Authenticated request:
 
 ```js
-artists
+const api = createApiClient({
+  baseURL: "https://artisthood-e6a5.onrender.com",
+  token: "YOUR_TOKEN",
+});
+
+const profile = await api.get("/api/profile");
 ```
 
-directly contains that array.
+---
+
+## Backward Compatibility
+
+The original `getApiUrl()` function is still available.
+
+```js
+import { getApiUrl } from "master-api-url";
+
+const users = await getApiUrl(
+  "https://api.example.com",
+  "/users"
+);
+```
+
+However, for new projects, `createApiClient()` is recommended:
+
+```js
+import { createApiClient } from "master-api-url";
+
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+});
+
+const users = await api.get("/users");
+```
+
+---
 
 ## How It Works
 
-The package handles the request internally:
-
 ```text
-getApiUrl(baseUrl, path, options)
-              │
-              ▼
-       Validate inputs
-              │
-              ▼
-       Clean URL slashes
-              │
-              ▼
-        Build API URL
-              │
-              ▼
-       axios.get(url, options)
-              │
-        ┌─────┴─────┐
-        ▼           ▼
-     Success      Failure
-        │           │
-        ▼           ▼
- response.data     null
+createApiClient(config)
+          │
+          ▼
+    Validate base URL
+          │
+          ▼
+    Create Axios client
+          │
+          ▼
+   Configure headers
+          │
+          ▼
+    Add authentication
+          │
+          ▼
+       api.get()
+       api.post()
+       api.put()
+       api.patch()
+       api.delete()
+          │
+          ▼
+     Normalize path
+          │
+          ▼
+      Axios request
+          │
+     ┌────┴────┐
+     ▼         ▼
+  Success    Failure
+     │         │
+     ▼         ▼
+response.data  normalized Error
 ```
 
-This keeps API request code simple for the package user.
+The package provides a small abstraction over Axios while keeping the API simple.
+
+---
 
 ## Example Project Structure
 
 ```text
 your-project/
+
 ├── src/
 │   ├── components/
 │   ├── pages/
 │   └── services/
+│
 ├── .env
 ├── package.json
 └── ...
 ```
+
+A centralized API client can be placed inside:
+
+```text
+src/services/api.js
+```
+
+Example:
+
+```js
+import { createApiClient } from "master-api-url";
+
+const api = createApiClient({
+  baseURL: import.meta.env.VITE_API_URL,
+});
+
+export default api;
+```
+
+Then anywhere in your application:
+
+```js
+import api from "./services/api";
+
+const users = await api.get("/users");
+```
+
+---
 
 ## Development
 
@@ -519,6 +806,8 @@ Run tests in watch mode:
 npm run test:watch
 ```
 
+---
+
 ## Build
 
 The package currently exports its source directly from:
@@ -535,6 +824,8 @@ Run the test suite with:
 npm test
 ```
 
+---
+
 ## Publishing
 
 Login to npm:
@@ -543,41 +834,67 @@ Login to npm:
 npm login
 ```
 
+Check your npm account:
+
+```bash
+npm whoami
+```
+
+Before publishing, check what will be included:
+
+```bash
+npm pack --dry-run
+```
+
+Publish the package:
+
+```bash
+npm publish
+```
+
+For a new patch release:
+
+```bash
+npm version patch
+```
+
+For a new minor release:
+
+```bash
+npm version minor
+```
+
+For the new `createApiClient()` API, use a major version if this is a breaking change:
+
+```bash
+npm version major
+```
+
 Then publish:
 
 ```bash
 npm publish
 ```
 
-For subsequent releases, update the package version:
-
-```bash
-npm version patch
-```
-
-or:
-
-```bash
-npm version minor
-```
-
-Then publish the new version:
-
-```bash
-npm publish
-```
+---
 
 ## Requirements
 
 * Node.js 18+
 * npm 9+
 * Axios
+* Modern JavaScript environment
+* ES Module support
+
+---
 
 ## License
 
 This project is licensed under the **MIT License**.
 
-See the [LICENSE](LICENSE) file for details.
+See the `LICENSE` file for details.
+
+---
 
 ## Author
 
@@ -585,6 +902,8 @@ See the [LICENSE](LICENSE) file for details.
 
 * GitHub: [@pasiabhishek](https://github.com/pasiabhishek)
 * npm: [master-api-url](https://www.npmjs.com/package/master-api-url)
+
+---
 
 ## Repository
 
@@ -594,4 +913,41 @@ https://github.com/pasiabhishek/master-api-url
 
 ---
 
-If `master-api-url` helps simplify your API requests, consider giving the project a ⭐ on GitHub.
+## Why master-api-url?
+
+Axios is already a powerful HTTP client.
+
+`master-api-url` doesn't try to replace Axios.
+
+Instead, it provides a simpler API layer on top of Axios for applications that want:
+
+* One reusable API configuration
+* Cleaner endpoint calls
+* Built-in authentication configuration
+* Consistent request methods
+* Standardized errors
+* Less repetitive API code
+
+Instead of:
+
+```js
+axios.get(`${BASE_URL}/users`);
+axios.post(`${BASE_URL}/users`, data);
+axios.put(`${BASE_URL}/users/1`, data);
+axios.delete(`${BASE_URL}/users/1`);
+```
+
+you can use:
+
+```js
+const api = createApiClient({
+  baseURL: BASE_URL,
+});
+
+api.get("/users");
+api.post("/users", data);
+api.put("/users/1", data);
+api.delete("/users/1");
+```
+
+**Simple API requests. One reusable client. Built on Axios.**

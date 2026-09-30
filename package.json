@@ -1,18 +1,24 @@
+
 {
   "name": "master-api-url",
-  "version": "1.0.2",
-  "description": "A simple Axios-based utility for fetching API data with minimal code.",
+  "version": "2.0.0",
+  "description": "A lightweight Axios-based API client for making simple and reusable HTTP requests.",
   "keywords": [
     "api",
     "axios",
     "api-client",
+    "http-client",
+    "http",
+    "rest-api",
+    "rest-client",
     "api-fetch",
-    "json",
     "javascript",
     "react",
     "vite",
-    "http",
-    "request"
+    "node",
+    "request",
+    "fetch",
+    "json"
   ],
   "homepage": "https://github.com/pasiabhishek/master-api-url#readme",
   "bugs": {
@@ -33,7 +39,9 @@
     }
   },
   "files": [
-    "src"
+    "src",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "vitest",
@@ -44,5 +52,8 @@
   },
   "devDependencies": {
     "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
