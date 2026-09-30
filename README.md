@@ -1,4 +1,4 @@
-# master-api-url
+# api-sutra
 
 A lightweight and simple API client built on top of **Axios** for making HTTP API requests with a clean and reusable interface.
 
