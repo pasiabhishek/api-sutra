@@ -1,433 +1,606 @@
 import {
-    describe,
-    it,
-    expect,
-    vi,
-    beforeEach,
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
 } from "vitest";
 
 import axios from "axios";
+
 import {
-    createApiClient,
-    getApiUrl,
+  createApiClient,
+  getApiUrl,
 } from "../src/index.js";
 
+
+const mockAxiosClient = () => ({
+  request: vi.fn(),
+
+  defaults: {
+    headers: {
+      common: {},
+    },
+  },
+
+  interceptors: {
+    request: {
+      use: vi.fn(),
+    },
+
+    response: {
+      use: vi.fn(),
+    },
+  },
+});
+
+
 describe("createApiClient", () => {
-    beforeEach(() => {
-        vi.restoreAllMocks();
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+
+  it("should require a base URL", () => {
+    expect(() =>
+      createApiClient()
+    ).toThrow("Base URL is required.");
+  });
+
+
+  it("should require an API path", async () => {
+    const api = createApiClient({
+      baseURL: "https://example.com",
     });
 
-    it("should require a base URL", () => {
-        expect(() => createApiClient()).toThrow(
-            "Base URL is required."
-        );
+    await expect(
+      api.get("")
+    ).rejects.toThrow(
+      "API path is required."
+    );
+  });
+
+
+  it("should create Axios client correctly", () => {
+    const client = mockAxiosClient();
+
+    const createSpy = vi
+      .spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    createApiClient({
+      baseURL: "https://example.com/",
+      timeout: 5000,
+      headers: {
+        "X-Test": "true",
+      },
     });
 
-    it("should require an API path", async () => {
-        const api = createApiClient({
-            baseURL: "https://example.com",
-        });
+    expect(createSpy).toHaveBeenCalledWith({
+      baseURL: "https://example.com",
+      timeout: 5000,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Test": "true",
+      },
+    });
+  });
 
-        await expect(
-            api.get("")
-        ).rejects.toThrow("API path is required.");
+
+  it("should make a GET request", async () => {
+    const client = mockAxiosClient();
+
+    client.request.mockResolvedValue({
+      data: {
+        id: 1,
+        name: "Test User",
+      },
     });
 
-    it("should create an Axios client with the correct configuration", () => {
-        const createSpy = vi.spyOn(axios, "create");
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
 
-        createApiClient({
-            baseURL: "https://example.com/",
-            timeout: 5000,
-            headers: {
-                "X-Test": "true",
-            },
-        });
-
-        expect(createSpy).toHaveBeenCalledWith({
-            baseURL: "https://example.com",
-            timeout: 5000,
-            headers: {
-                "Content-Type": "application/json",
-                "X-Test": "true",
-            },
-        });
+    const api = createApiClient({
+      baseURL: "https://example.com",
     });
 
-    it("should make a GET request", async () => {
-        const mockResponse = {
-            data: {
-                id: 1,
-                name: "Test User",
-            },
-        };
+    const data = await api.get("/users");
 
-        const get = vi.fn().mockResolvedValue(mockResponse);
-
-        vi.spyOn(axios, "create").mockReturnValue({
-            get,
-            post: vi.fn(),
-            put: vi.fn(),
-            patch: vi.fn(),
-            delete: vi.fn(),
-        });
-
-        const api = createApiClient({
-            baseURL: "https://example.com/",
-        });
-
-        const data = await api.get("/api/users");
-
-        expect(get).toHaveBeenCalledWith(
-            "/api/users",
-            {}
-        );
-
-        expect(data).toEqual(mockResponse.data);
+    expect(client.request).toHaveBeenCalledWith({
+      method: "GET",
+      url: "/users",
     });
 
-    it("should normalize API paths", async () => {
-        const get = vi.fn().mockResolvedValue({
-            data: { success: true },
-        });
+    expect(data).toEqual({
+      id: 1,
+      name: "Test User",
+    });
+  });
 
-        vi.spyOn(axios, "create").mockReturnValue({
-            get,
-            post: vi.fn(),
-            put: vi.fn(),
-            patch: vi.fn(),
-            delete: vi.fn(),
-        });
 
-        const api = createApiClient({
-            baseURL: "https://example.com",
-        });
+  it("should normalize API paths", async () => {
+    const client = mockAxiosClient();
 
-        await api.get("///api/users");
-
-        expect(get).toHaveBeenCalledWith(
-            "/api/users",
-            {}
-        );
+    client.request.mockResolvedValue({
+      data: {
+        success: true,
+      },
     });
 
-    it("should make a POST request", async () => {
-        const post = vi.fn().mockResolvedValue({
-            data: {
-                id: 1,
-                name: "Pasi",
-            },
-        });
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
 
-        vi.spyOn(axios, "create").mockReturnValue({
-            get: vi.fn(),
-            post,
-            put: vi.fn(),
-            patch: vi.fn(),
-            delete: vi.fn(),
-        });
-
-        const api = createApiClient({
-            baseURL: "https://example.com",
-        });
-
-        const user = {
-            name: "Pasi",
-        };
-
-        const data = await api.post(
-            "/users",
-            user
-        );
-
-        expect(post).toHaveBeenCalledWith(
-            "/users",
-            user,
-            {}
-        );
-
-        expect(data).toEqual({
-            id: 1,
-            name: "Pasi",
-        });
+    const api = createApiClient({
+      baseURL: "https://example.com",
     });
 
-    it("should make a PUT request", async () => {
-        const put = vi.fn().mockResolvedValue({
-            data: {
-                success: true,
-            },
-        });
+    await api.get("///users");
 
-        vi.spyOn(axios, "create").mockReturnValue({
-            get: vi.fn(),
-            post: vi.fn(),
-            put,
-            patch: vi.fn(),
-            delete: vi.fn(),
-        });
+    expect(client.request).toHaveBeenCalledWith({
+      method: "GET",
+      url: "/users",
+    });
+  });
 
-        const api = createApiClient({
-            baseURL: "https://example.com",
-        });
 
-        const data = await api.put(
-            "/users/1",
-            { name: "Updated User" }
-        );
+  it("should make a POST request", async () => {
+    const client = mockAxiosClient();
 
-        expect(put).toHaveBeenCalledWith(
-            "/users/1",
-            { name: "Updated User" },
-            {}
-        );
-
-        expect(data).toEqual({
-            success: true,
-        });
+    client.request.mockResolvedValue({
+      data: {
+        id: 1,
+        name: "Pasi",
+      },
     });
 
-    it("should make a PATCH request", async () => {
-        const patch = vi.fn().mockResolvedValue({
-            data: {
-                success: true,
-            },
-        });
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
 
-        vi.spyOn(axios, "create").mockReturnValue({
-            get: vi.fn(),
-            post: vi.fn(),
-            put: vi.fn(),
-            patch,
-            delete: vi.fn(),
-        });
-
-        const api = createApiClient({
-            baseURL: "https://example.com",
-        });
-
-        const data = await api.patch(
-            "/users/1",
-            { name: "Pasi" }
-        );
-
-        expect(patch).toHaveBeenCalledWith(
-            "/users/1",
-            { name: "Pasi" },
-            {}
-        );
-
-        expect(data).toEqual({
-            success: true,
-        });
+    const api = createApiClient({
+      baseURL: "https://example.com",
     });
 
-    it("should make a DELETE request", async () => {
-        const remove = vi.fn().mockResolvedValue({
-            data: {
-                success: true,
-            },
-        });
+    const user = {
+      name: "Pasi",
+    };
 
-        vi.spyOn(axios, "create").mockReturnValue({
-            get: vi.fn(),
-            post: vi.fn(),
-            put: vi.fn(),
-            patch: vi.fn(),
-            delete: remove,
-        });
+    const data = await api.post(
+      "/users",
+      user
+    );
 
-        const api = createApiClient({
-            baseURL: "https://example.com",
-        });
-
-        const data = await api.delete("/users/1");
-
-        expect(remove).toHaveBeenCalledWith(
-            "/users/1",
-            {}
-        );
-
-        expect(data).toEqual({
-            success: true,
-        });
+    expect(client.request).toHaveBeenCalledWith({
+      method: "POST",
+      url: "/users",
+      data: user,
     });
 
-    it("should pass Axios options correctly", async () => {
-        const get = vi.fn().mockResolvedValue({
-            data: {
-                success: true,
-            },
-        });
+    expect(data).toEqual({
+      id: 1,
+      name: "Pasi",
+    });
+  });
 
-        vi.spyOn(axios, "create").mockReturnValue({
-            get,
-            post: vi.fn(),
-            put: vi.fn(),
-            patch: vi.fn(),
-            delete: vi.fn(),
-        });
 
-        const api = createApiClient({
-            baseURL: "https://example.com",
-        });
+  it("should make a PUT request", async () => {
+    const client = mockAxiosClient();
 
-        const options = {
-            headers: {
-                Authorization: "Bearer test-token",
-            },
-            timeout: 5000,
-        };
-
-        const data = await api.get(
-            "/api/test",
-            options
-        );
-
-        expect(get).toHaveBeenCalledWith(
-            "/api/test",
-            options
-        );
-
-        expect(data).toEqual({
-            success: true,
-        });
+    client.request.mockResolvedValue({
+      data: {
+        success: true,
+      },
     });
 
-    it("should configure a Bearer token", () => {
-        const createSpy = vi.spyOn(axios, "create");
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
 
-        const apiClient = {
-            get: vi.fn(),
-            post: vi.fn(),
-            put: vi.fn(),
-            patch: vi.fn(),
-            delete: vi.fn(),
-        };
-
-        createSpy.mockReturnValue(apiClient);
-
-        createApiClient({
-            baseURL: "https://example.com",
-            token: "test-token",
-        });
-
-        expect(
-            apiClient.defaults?.headers?.common?.Authorization
-        ).toBe("Bearer test-token");
+    const api = createApiClient({
+      baseURL: "https://example.com",
     });
 
-    it("should throw a normalized API error", async () => {
-        const axiosError = {
-            response: {
-                status: 404,
-                data: {
-                    message: "User not found",
-                },
-            },
-            message: "Request failed",
-        };
+    const data = await api.put(
+      "/users/1",
+      {
+        name: "Updated User",
+      }
+    );
 
-        const get = vi.fn().mockRejectedValue(axiosError);
-
-        vi.spyOn(axios, "create").mockReturnValue({
-            get,
-            post: vi.fn(),
-            put: vi.fn(),
-            patch: vi.fn(),
-            delete: vi.fn(),
-        });
-
-        const api = createApiClient({
-            baseURL: "https://example.com",
-        });
-
-        try {
-            await api.get("/users/999");
-        } catch (error) {
-            expect(error).toBeInstanceOf(Error);
-            expect(error.message).toBe("User not found");
-            expect(error.status).toBe(404);
-            expect(error.data).toEqual({
-                message: "User not found",
-            });
-        }
+    expect(client.request).toHaveBeenCalledWith({
+      method: "PUT",
+      url: "/users/1",
+      data: {
+        name: "Updated User",
+      },
     });
+
+    expect(data).toEqual({
+      success: true,
+    });
+  });
+
+
+  it("should make a PATCH request", async () => {
+    const client = mockAxiosClient();
+
+    client.request.mockResolvedValue({
+      data: {
+        success: true,
+      },
+    });
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const api = createApiClient({
+      baseURL: "https://example.com",
+    });
+
+    const data = await api.patch(
+      "/users/1",
+      {
+        name: "Pasi",
+      }
+    );
+
+    expect(client.request).toHaveBeenCalledWith({
+      method: "PATCH",
+      url: "/users/1",
+      data: {
+        name: "Pasi",
+      },
+    });
+
+    expect(data).toEqual({
+      success: true,
+    });
+  });
+
+
+  it("should make a DELETE request", async () => {
+    const client = mockAxiosClient();
+
+    client.request.mockResolvedValue({
+      data: {
+        success: true,
+      },
+    });
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const api = createApiClient({
+      baseURL: "https://example.com",
+    });
+
+    const data = await api.delete(
+      "/users/1"
+    );
+
+    expect(client.request).toHaveBeenCalledWith({
+      method: "DELETE",
+      url: "/users/1",
+    });
+
+    expect(data).toEqual({
+      success: true,
+    });
+  });
+
+
+  it("should pass Axios options correctly", async () => {
+    const client = mockAxiosClient();
+
+    client.request.mockResolvedValue({
+      data: {
+        success: true,
+      },
+    });
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const api = createApiClient({
+      baseURL: "https://example.com",
+    });
+
+    const options = {
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+      timeout: 5000,
+    };
+
+    const data = await api.get(
+      "/users",
+      options
+    );
+
+    expect(client.request).toHaveBeenCalledWith({
+      method: "GET",
+      url: "/users",
+      ...options,
+    });
+
+    expect(data).toEqual({
+      success: true,
+    });
+  });
+
+
+  it("should configure a Bearer token", () => {
+    const client = mockAxiosClient();
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    createApiClient({
+      baseURL: "https://example.com",
+      token: "test-token",
+    });
+
+    expect(
+      client.defaults.headers.common.Authorization
+    ).toBe(
+      "Bearer test-token"
+    );
+  });
+
+
+  it("should update the token", () => {
+    const client = mockAxiosClient();
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const api = createApiClient({
+      baseURL: "https://example.com",
+    });
+
+    api.setToken("new-token");
+
+    expect(
+      client.defaults.headers.common.Authorization
+    ).toBe(
+      "Bearer new-token"
+    );
+  });
+
+
+  it("should clear the token", () => {
+    const client = mockAxiosClient();
+
+    client.defaults.headers.common.Authorization =
+      "Bearer test-token";
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const api = createApiClient({
+      baseURL: "https://example.com",
+    });
+
+    api.clearToken();
+
+    expect(
+      client.defaults.headers.common.Authorization
+    ).toBeUndefined();
+  });
+
+
+  it("should make a custom request", async () => {
+    const client = mockAxiosClient();
+
+    client.request.mockResolvedValue({
+      data: {
+        success: true,
+      },
+    });
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const api = createApiClient({
+      baseURL: "https://example.com",
+    });
+
+    const data = await api.request({
+      method: "GET",
+      url: "/users",
+    });
+
+    expect(client.request).toHaveBeenCalledWith({
+      method: "GET",
+      url: "/users",
+    });
+
+    expect(data).toEqual({
+      success: true,
+    });
+  });
+
+
+  it("should support interceptors", () => {
+    const client = mockAxiosClient();
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const requestInterceptor = vi.fn();
+    const responseInterceptor = vi.fn();
+    const errorInterceptor = vi.fn();
+
+    createApiClient({
+      baseURL: "https://example.com",
+      interceptors: {
+        request: requestInterceptor,
+        response: responseInterceptor,
+        error: errorInterceptor,
+      },
+    });
+
+    expect(
+      client.interceptors.request.use
+    ).toHaveBeenCalledWith(
+      requestInterceptor
+    );
+
+    expect(
+      client.interceptors.response.use
+    ).toHaveBeenCalledTimes(2);
+  });
+
+
+  it("should normalize API errors", async () => {
+    const client = mockAxiosClient();
+
+    client.request.mockRejectedValue({
+      response: {
+        status: 404,
+        data: {
+          message: "User not found",
+        },
+      },
+      message: "Request failed",
+      code: "ERR_BAD_REQUEST",
+    });
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const api = createApiClient({
+      baseURL: "https://example.com",
+    });
+
+    await expect(
+      api.get("/users/999")
+    ).rejects.toMatchObject({
+      name: "ApiSutraError",
+      message: "User not found",
+      status: 404,
+      data: {
+        message: "User not found",
+      },
+      code: "ERR_BAD_REQUEST",
+    });
+  });
+
+
+  it("should use the fallback error message", async () => {
+    const client = mockAxiosClient();
+
+    client.request.mockRejectedValue({
+      message: "Network error",
+      code: "ERR_NETWORK",
+    });
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const api = createApiClient({
+      baseURL: "https://example.com",
+    });
+
+    await expect(
+      api.get("/users")
+    ).rejects.toMatchObject({
+      name: "ApiSutraError",
+      message: "Network error",
+      code: "ERR_NETWORK",
+    });
+  });
+
+
+  it("should clear the token when setToken receives an empty value", () => {
+    const client = mockAxiosClient();
+
+    client.defaults.headers.common.Authorization =
+      "Bearer old-token";
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const api = createApiClient({
+      baseURL: "https://example.com",
+    });
+
+    api.setToken("");
+
+    expect(
+      client.defaults.headers.common.Authorization
+    ).toBeUndefined();
+  });
 });
 
 
 describe("getApiUrl", () => {
-    beforeEach(() => {
-        vi.restoreAllMocks();
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+
+  it("should continue supporting the old GET helper", async () => {
+    const client = mockAxiosClient();
+
+    client.request.mockResolvedValue({
+      data: {
+        id: 1,
+        name: "Test User",
+      },
     });
 
-    it("should continue supporting the old GET helper", async () => {
-        const get = vi.fn().mockResolvedValue({
-            data: {
-                id: 1,
-                name: "Test User",
-            },
-        });
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
 
-        vi.spyOn(axios, "create").mockReturnValue({
-            get,
-            post: vi.fn(),
-            put: vi.fn(),
-            patch: vi.fn(),
-            delete: vi.fn(),
-        });
+    const data = await getApiUrl(
+      "https://example.com/",
+      "/api/users"
+    );
 
-        const data = await getApiUrl(
-            "https://example.com/",
-            "/api/users"
-        );
-
-        expect(get).toHaveBeenCalledWith(
-            "/api/users",
-            {}
-        );
-
-        expect(data).toEqual({
-            id: 1,
-            name: "Test User",
-        });
+    expect(client.request).toHaveBeenCalledWith({
+      method: "GET",
+      url: "/api/users",
     });
 
-    it("should pass options through the old helper", async () => {
-        const get = vi.fn().mockResolvedValue({
-            data: {
-                success: true,
-            },
-        });
-
-        vi.spyOn(axios, "create").mockReturnValue({
-            get,
-            post: vi.fn(),
-            put: vi.fn(),
-            patch: vi.fn(),
-            delete: vi.fn(),
-        });
-
-        const options = {
-            headers: {
-                Authorization: "Bearer test-token",
-            },
-            timeout: 5000,
-        };
-
-        const data = await getApiUrl(
-            "https://example.com",
-            "/api/test",
-            options
-        );
-
-        expect(get).toHaveBeenCalledWith(
-            "/api/test",
-            options
-        );
-
-        expect(data).toEqual({
-            success: true,
-        });
+    expect(data).toEqual({
+      id: 1,
+      name: "Test User",
     });
+  });
+
+
+  it("should pass options through the old helper", async () => {
+    const client = mockAxiosClient();
+
+    client.request.mockResolvedValue({
+      data: {
+        success: true,
+      },
+    });
+
+    vi.spyOn(axios, "create")
+      .mockReturnValue(client);
+
+    const options = {
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+      timeout: 5000,
+    };
+
+    const data = await getApiUrl(
+      "https://example.com",
+      "/api/test",
+      options
+    );
+
+    expect(client.request).toHaveBeenCalledWith({
+      method: "GET",
+      url: "/api/test",
+      ...options,
+    });
+
+    expect(data).toEqual({
+      success: true,
+    });
+  });
 });

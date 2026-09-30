@@ -1,21 +1,25 @@
-# master-api-url
+# api-sutra
 
-A lightweight and simple API client built on top of **Axios** for making HTTP API requests with a clean and reusable interface.
+A lightweight and reusable API client wrapper built on top of **Axios** for making clean and consistent HTTP API requests.
 
-`master-api-url` lets you configure your API once and then use simple methods like:
+**API Sutra** lets you configure your API once and use simple methods for your requests:
 
 ```js
 api.get("/users");
+
 api.post("/users", data);
+
 api.put("/users/1", data);
+
 api.patch("/users/1", data);
+
 api.delete("/users/1");
 ```
 
-The goal is simple:
+Instead of repeatedly configuring Axios and your API base URL, create one reusable client:
 
 ```js
-import { createApiClient } from "master-api-url";
+import { createApiClient } from "api-sutra";
 
 const api = createApiClient({
   baseURL: "https://api.example.com",
@@ -24,7 +28,7 @@ const api = createApiClient({
 const users = await api.get("/users");
 ```
 
-You configure the base URL once instead of repeatedly writing complete API URLs.
+> **Simple API requests. One reusable client. Built on Axios.**
 
 ---
 
@@ -37,39 +41,44 @@ You configure the base URL once instead of repeatedly writing complete API URLs.
 * Supports `PUT`
 * Supports `PATCH`
 * Supports `DELETE`
+* Universal `request()` method
 * Configure the base URL once
-* Automatically handles `/` between base URL and endpoint
+* Automatically normalizes API paths
 * Directly returns `response.data`
-* Supports Axios request options
+* Supports Axios request configuration
 * Optional Bearer token authentication
+* Runtime token management
 * Configurable request timeout
 * Custom default headers
+* Request interceptors
+* Response interceptors
+* Error interceptors
 * Standardized API errors
-* Preserves HTTP status and response data on errors
-* Promise-based
-* Lightweight
-* Works with modern JavaScript
+* Preserves HTTP status and response data
+* Promise-based API
 * ES Module support
-* Keeps the original `getApiUrl()` helper for backward compatibility
+* Node.js 18+
+* Backward-compatible `getApiUrl()` helper
+* Lightweight abstraction over Axios
 
 ---
 
 ## Installation
 
-Install `master-api-url` using npm:
+Install API Sutra using npm:
 
 ```bash
-npm install master-api-url
+npm install api-sutra
 ```
 
 ---
 
-## Usage
+## Quick Start
 
 ### Import
 
 ```js
-import { createApiClient } from "master-api-url";
+import { createApiClient } from "api-sutra";
 ```
 
 ### Create an API Client
@@ -80,11 +89,23 @@ const api = createApiClient({
 });
 ```
 
-The `baseURL` is configured once and can then be reused for every request.
+You can now reuse the same client throughout your application:
+
+```js
+const users = await api.get("/users");
+
+const user = await api.post("/users", {
+  name: "Pasi Abhishek",
+});
+```
 
 ---
 
-## GET Request
+# HTTP Methods
+
+## GET
+
+Use `get()` to retrieve data:
 
 ```js
 const users = await api.get("/users");
@@ -92,13 +113,374 @@ const users = await api.get("/users");
 console.log(users);
 ```
 
-Internally, the package makes:
+The request is sent to:
 
 ```text
 GET https://api.example.com/users
 ```
 
-and directly returns:
+API Sutra returns the API's `response.data` directly.
+
+---
+
+## POST
+
+Use `post()` to create a resource:
+
+```js
+const user = await api.post("/users", {
+  name: "Pasi Abhishek",
+  email: "pasi@example.com",
+});
+
+console.log(user);
+```
+
+---
+
+## PUT
+
+Use `put()` to replace or update an existing resource:
+
+```js
+const user = await api.put("/users/1", {
+  name: "Pasi Abhishek",
+  email: "pasi@example.com",
+});
+```
+
+---
+
+## PATCH
+
+Use `patch()` for partial updates:
+
+```js
+const user = await api.patch("/users/1", {
+  name: "Master Aazam",
+});
+```
+
+---
+
+## DELETE
+
+Use `delete()` to remove a resource:
+
+```js
+const result = await api.delete("/users/1");
+
+console.log(result);
+```
+
+---
+
+# API Paths
+
+API Sutra automatically normalizes leading slashes.
+
+Both of these are supported:
+
+```js
+api.get("/users");
+```
+
+and:
+
+```js
+api.get("users");
+```
+
+They both resolve to:
+
+```text
+https://api.example.com/users
+```
+
+Even multiple leading slashes are normalized:
+
+```js
+api.get("///users");
+```
+
+becomes:
+
+```text
+/users
+```
+
+---
+
+# Query Parameters
+
+Axios request options can be passed to individual requests.
+
+```js
+const users = await api.get("/users", {
+  params: {
+    page: 1,
+    limit: 10,
+  },
+});
+```
+
+The resulting request is equivalent to:
+
+```text
+GET https://api.example.com/users?page=1&limit=10
+```
+
+---
+
+# Request Headers
+
+You can provide request-specific headers:
+
+```js
+const users = await api.get("/users", {
+  headers: {
+    "X-App-Version": "1.0.0",
+  },
+});
+```
+
+Because API Sutra uses Axios, supported Axios request configuration can also be passed.
+
+Examples include:
+
+* `headers`
+* `params`
+* `timeout`
+* `withCredentials`
+* `signal`
+* `responseType`
+* Other Axios request options
+
+---
+
+# Authentication
+
+API Sutra supports optional Bearer token authentication.
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+  token: "YOUR_TOKEN",
+});
+```
+
+Requests automatically include:
+
+```http
+Authorization: Bearer YOUR_TOKEN
+```
+
+You can then make authenticated requests without manually adding the header:
+
+```js
+const profile = await api.get("/profile");
+```
+
+---
+
+# Token Management
+
+You can change the authentication token after creating the client.
+
+## Set Token
+
+```js
+api.setToken("NEW_TOKEN");
+```
+
+The client will use:
+
+```http
+Authorization: Bearer NEW_TOKEN
+```
+
+for future requests.
+
+## Clear Token
+
+```js
+api.clearToken();
+```
+
+This removes the Authorization header from the client.
+
+Calling:
+
+```js
+api.setToken("");
+```
+
+also clears the current token.
+
+---
+
+# Custom Default Headers
+
+Default headers can be configured when creating the client:
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+  headers: {
+    "X-App-Version": "1.0.0",
+    "X-Client": "web",
+  },
+});
+```
+
+API Sutra also provides a default:
+
+```http
+Content-Type: application/json
+```
+
+unless overridden by your headers.
+
+---
+
+# Request Timeout
+
+The default timeout is:
+
+```text
+10000 ms
+```
+
+which equals 10 seconds.
+
+You can customize it:
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+  timeout: 5000,
+});
+```
+
+You can also override the timeout for an individual request:
+
+```js
+const users = await api.get("/users", {
+  timeout: 3000,
+});
+```
+
+---
+
+# Interceptors
+
+API Sutra exposes a simple configuration for Axios interceptors.
+
+## Request Interceptor
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+
+  interceptors: {
+    request: (config) => {
+      console.log("Sending request:", config.url);
+
+      return config;
+    },
+  },
+});
+```
+
+---
+
+## Response Interceptor
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+
+  interceptors: {
+    response: (response) => {
+      console.log("Response received");
+
+      return response;
+    },
+  },
+});
+```
+
+---
+
+## Error Interceptor
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+
+  interceptors: {
+    error: (error) => {
+      console.error("API error:", error);
+
+      return Promise.reject(error);
+    },
+  },
+});
+```
+
+You can also configure all three:
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+
+  interceptors: {
+    request: (config) => {
+      return config;
+    },
+
+    response: (response) => {
+      return response;
+    },
+
+    error: (error) => {
+      return Promise.reject(error);
+    },
+  },
+});
+```
+
+---
+
+# Universal Request
+
+When the standard methods are not enough, use `request()`:
+
+```js
+const data = await api.request({
+  method: "GET",
+  url: "/users",
+});
+```
+
+For example:
+
+```js
+const data = await api.request({
+  method: "OPTIONS",
+  url: "/users",
+});
+```
+
+You can use Axios configuration supported by the underlying client.
+
+---
+
+# Return Value
+
+All API methods return a Promise.
+
+When a request succeeds, API Sutra returns:
 
 ```js
 response.data
@@ -119,7 +501,7 @@ then:
 const data = await api.get("/users");
 ```
 
-will give you:
+directly gives:
 
 ```js
 {
@@ -128,234 +510,149 @@ will give you:
 }
 ```
 
----
-
-## POST Request
-
-Use `post()` to send data to an API.
+You do not need to write:
 
 ```js
-const user = await api.post("/users", {
-  name: "Pasi Abhishek",
-  email: "pasi@example.com",
-});
+const response = await axios.get(...);
 
-console.log(user);
-```
-
-Internally:
-
-```js
-axios.post("/users", data, options);
-```
-
-The method returns:
-
-```js
-response.data
+const data = response.data;
 ```
 
 ---
 
-## PUT Request
+# Error Handling
 
-Use `put()` when updating an existing resource.
+API Sutra normalizes request errors into a consistent `ApiSutraError`.
 
-```js
-const user = await api.put("/users/1", {
-  name: "Pasi Abhishek",
-  email: "pasi@example.com",
-});
-```
-
----
-
-## PATCH Request
-
-Use `patch()` when partially updating an existing resource.
+Example:
 
 ```js
-const user = await api.patch("/users/1", {
-  name: "Master Aazam",
-});
+try {
+  const users = await api.get("/users");
+} catch (error) {
+  console.log(error.name);
+  console.log(error.message);
+  console.log(error.status);
+  console.log(error.data);
+  console.log(error.response);
+}
 ```
 
----
-
-## DELETE Request
-
-Use `delete()` to remove a resource.
+A normalized error provides:
 
 ```js
-const result = await api.delete("/users/1");
-
-console.log(result);
+error.name
+error.message
+error.status
+error.data
+error.response
+error.code
+error.original
 ```
 
----
-
-## Endpoint With or Without `/`
-
-You can provide an endpoint with or without a leading slash.
-
-### With a leading slash
-
-```js
-const users = await api.get("/users");
-```
-
-### Without a leading slash
-
-```js
-const users = await api.get("users");
-```
-
-Both produce:
+The error name is:
 
 ```text
-https://api.example.com/users
+ApiSutraError
 ```
-
-The package automatically normalizes the endpoint path.
 
 ---
 
-## Query Parameters
+## Example API Error
 
-You can pass Axios request options to any request.
+If the server returns:
 
-For example:
-
-```js
-const users = await api.get("/users", {
-  params: {
-    page: 1,
-    limit: 10,
-  },
-});
+```json
+{
+  "message": "Unauthorized"
+}
 ```
 
-Axios will generate the appropriate query string.
+you can handle it with:
 
-The request becomes:
+```js
+try {
+  const profile = await api.get("/profile");
+} catch (error) {
+  console.log(error.message);
+}
+```
+
+Output:
 
 ```text
-GET https://api.example.com/users?page=1&limit=10
+Unauthorized
 ```
 
----
-
-## Request Headers
-
-You can provide request-specific headers:
+API Sutra also preserves the original Axios error through:
 
 ```js
-const users = await api.get("/users", {
-  headers: {
-    Authorization: "Bearer YOUR_TOKEN",
-  },
-});
+error.original
 ```
 
-The options object is passed to Axios.
-
-This means you can use supported Axios request configuration such as:
-
-* `headers`
-* `params`
-* `timeout`
-* `withCredentials`
-* Other Axios request options
+This allows advanced applications to access the underlying Axios error when necessary.
 
 ---
 
-## Authentication
+# Validation
 
-You can configure a Bearer token when creating the API client.
+API Sutra validates required configuration before making requests.
+
+## Missing Base URL
+
+```js
+createApiClient();
+```
+
+throws:
+
+```text
+Error: Base URL is required.
+```
+
+## Missing API Path
 
 ```js
 const api = createApiClient({
   baseURL: "https://api.example.com",
-  token: "YOUR_TOKEN",
 });
+
+await api.get("");
 ```
 
-The client automatically adds:
-
-```http
-Authorization: Bearer YOUR_TOKEN
-```
-
-to requests.
-
-You can then simply write:
-
-```js
-const profile = await api.get("/profile");
-```
-
-without manually adding the Authorization header to every request.
-
----
-
-## Custom Headers
-
-You can configure default headers when creating the client:
-
-```js
-const api = createApiClient({
-  baseURL: "https://api.example.com",
-  headers: {
-    "X-App-Version": "1.0.0",
-  },
-});
-```
-
-These headers are used as default headers for the API client.
-
----
-
-## Request Timeout
-
-The default request timeout is:
+throws:
 
 ```text
-10000 ms
+Error: API path is required.
 ```
 
-which is 10 seconds.
-
-You can customize it:
-
-```js
-const api = createApiClient({
-  baseURL: "https://api.example.com",
-  timeout: 5000,
-});
-```
+These validation errors happen before an HTTP request is made.
 
 ---
 
-## Function
+# Configuration
+
+The main function is:
 
 ```js
 createApiClient(config)
 ```
 
-### Configuration
+### Configuration Options
 
-| Property  | Type     | Default | Description                          |
-| --------- | -------- | ------: | ------------------------------------ |
-| `baseURL` | `string` |       — | Base URL of the API                  |
-| `token`   | `string` |       — | Optional Bearer authentication token |
-| `timeout` | `number` | `10000` | Request timeout in milliseconds      |
-| `headers` | `object` |    `{}` | Default request headers              |
+| Property       | Type     | Default | Description                              |
+| -------------- | -------- | ------: | ---------------------------------------- |
+| `baseURL`      | `string` |       — | Base URL of the API                      |
+| `token`        | `string` |       — | Optional Bearer authentication token     |
+| `timeout`      | `number` | `10000` | Request timeout in milliseconds          |
+| `headers`      | `object` |    `{}` | Default request headers                  |
+| `interceptors` | `object` |    `{}` | Request, response and error interceptors |
 
 ---
 
-## API Methods
+# API Methods
 
-After creating the client:
+After creating a client:
 
 ```js
 const api = createApiClient({
@@ -371,6 +668,9 @@ api.post()
 api.put()
 api.patch()
 api.delete()
+api.request()
+api.setToken()
+api.clearToken()
 ```
 
 ### GET
@@ -403,154 +703,31 @@ api.patch(path, data, options)
 api.delete(path, options)
 ```
 
----
-
-## Return Value
-
-All API methods return a Promise.
-
-When the request succeeds, the methods return:
+### Universal Request
 
 ```js
-response.data
+api.request(config)
 ```
 
-For example:
+### Authentication
 
 ```js
-const users = await api.get("/users");
+api.setToken(token)
 ```
-
-If the API returns:
-
-```json
-[
-  {
-    "_id": "1",
-    "fullName": "John Doe"
-  },
-  {
-    "_id": "2",
-    "fullName": "Jane Doe"
-  }
-]
-```
-
-then `users` directly contains:
 
 ```js
-[
-  {
-    _id: "1",
-    fullName: "John Doe"
-  },
-  {
-    _id: "2",
-    fullName: "Jane Doe"
-  }
-]
+api.clearToken()
 ```
 
 ---
 
-## Error Handling
+# React Example
 
-API errors are normalized by `master-api-url`.
-
-Example:
-
-```js
-try {
-  const users = await api.get("/users");
-} catch (error) {
-  console.log(error.message);
-  console.log(error.status);
-  console.log(error.data);
-}
-```
-
-The error provides:
-
-```js
-error.message
-error.status
-error.data
-error.response
-```
-
-For example, an API returning:
-
-```json
-{
-  "message": "Unauthorized"
-}
-```
-
-can be handled as:
-
-```js
-try {
-  const profile = await api.get("/profile");
-} catch (error) {
-  console.log(error.message);
-}
-```
-
-Output:
-
-```text
-Unauthorized
-```
-
-Unlike the original `getApiUrl()` implementation, the new API client **throws the normalized error** instead of silently returning `null`.
-
-This allows the application to decide how the error should be handled.
-
----
-
-## Validation Errors
-
-The package validates the API configuration before making requests.
-
-### Missing Base URL
-
-```js
-createApiClient();
-```
-
-throws:
-
-```text
-Error: Base URL is required.
-```
-
-### Missing API Path
-
-```js
-const api = createApiClient({
-  baseURL: "https://api.example.com",
-});
-
-await api.get("");
-```
-
-throws:
-
-```text
-Error: API path is required.
-```
-
-These are input validation errors and are thrown before the API request is made.
-
----
-
-## React Example
-
-`master-api-url` can be used in React applications.
+API Sutra works with React applications.
 
 ```jsx
 import { useEffect, useState } from "react";
-import { createApiClient } from "master-api-url";
+import { createApiClient } from "api-sutra";
 
 const api = createApiClient({
   baseURL: import.meta.env.VITE_API_URL,
@@ -568,6 +745,7 @@ function Users() {
         setUsers(data);
       } catch (error) {
         console.error(error);
+
         setError(error.message);
       }
     }
@@ -595,25 +773,31 @@ export default Users;
 
 ---
 
-## Using Environment Variables
+# Environment Variables
 
-For Vite projects, store your API base URL in `.env`:
+For Vite applications, create:
+
+```text
+.env
+```
+
+and add:
 
 ```env
 VITE_API_URL=https://api.example.com
 ```
 
-Then create your client:
+Then:
 
 ```js
-import { createApiClient } from "master-api-url";
+import { createApiClient } from "api-sutra";
 
 const api = createApiClient({
   baseURL: import.meta.env.VITE_API_URL,
 });
 ```
 
-Now use it throughout your application:
+Now requests can use:
 
 ```js
 const users = await api.get("/api/users");
@@ -621,19 +805,58 @@ const users = await api.get("/api/users");
 
 ---
 
-## Real-World Example
+# Centralized API Service
 
-For an API such as ArtistHood:
+For larger applications, you can create a reusable API service.
+
+Example:
+
+```text
+src/
+├── components/
+├── pages/
+├── services/
+│   └── api.js
+└── App.jsx
+```
+
+### `src/services/api.js`
 
 ```js
-import { createApiClient } from "master-api-url";
+import { createApiClient } from "api-sutra";
+
+const api = createApiClient({
+  baseURL: import.meta.env.VITE_API_URL,
+});
+
+export default api;
+```
+
+Then use it anywhere:
+
+```js
+import api from "./services/api";
+
+const users = await api.get("/users");
+```
+
+This keeps your API configuration centralized.
+
+---
+
+# Real-World Example
+
+API Sutra can be used with an application such as ArtistHood:
+
+```js
+import { createApiClient } from "api-sutra";
 
 const api = createApiClient({
   baseURL: "https://artisthood-e6a5.onrender.com",
 });
 ```
 
-Then:
+Get artists:
 
 ```js
 const artists = await api.get("/api/artists");
@@ -641,7 +864,7 @@ const artists = await api.get("/api/artists");
 console.log(artists);
 ```
 
-POST example:
+Create an artist:
 
 ```js
 const artist = await api.post("/api/artists", {
@@ -662,12 +885,12 @@ const profile = await api.get("/api/profile");
 
 ---
 
-## Backward Compatibility
+# Backward Compatibility
 
-The original `getApiUrl()` function is still available.
+API Sutra keeps the original `getApiUrl()` helper for applications using the earlier API.
 
 ```js
-import { getApiUrl } from "master-api-url";
+import { getApiUrl } from "api-sutra";
 
 const users = await getApiUrl(
   "https://api.example.com",
@@ -675,10 +898,24 @@ const users = await getApiUrl(
 );
 ```
 
-However, for new projects, `createApiClient()` is recommended:
+Options can also be passed:
 
 ```js
-import { createApiClient } from "master-api-url";
+const users = await getApiUrl(
+  "https://api.example.com",
+  "/users",
+  {
+    params: {
+      page: 1,
+    },
+  }
+);
+```
+
+For new projects, `createApiClient()` is recommended:
+
+```js
+import { createApiClient } from "api-sutra";
 
 const api = createApiClient({
   baseURL: "https://api.example.com",
@@ -689,103 +926,102 @@ const users = await api.get("/users");
 
 ---
 
-## How It Works
+# Direct Axios Access
 
-```text
-createApiClient(config)
-          │
-          ▼
-    Validate base URL
-          │
-          ▼
-    Create Axios client
-          │
-          ▼
-   Configure headers
-          │
-          ▼
-    Add authentication
-          │
-          ▼
-       api.get()
-       api.post()
-       api.put()
-       api.patch()
-       api.delete()
-          │
-          ▼
-     Normalize path
-          │
-          ▼
-      Axios request
-          │
-     ┌────┴────┐
-     ▼         ▼
-  Success    Failure
-     │         │
-     ▼         ▼
-response.data  normalized Error
+API Sutra intentionally keeps the underlying Axios client accessible for advanced use cases:
+
+```js
+const api = createApiClient({
+  baseURL: "https://api.example.com",
+});
+
+api.client;
 ```
 
-The package provides a small abstraction over Axios while keeping the API simple.
+This allows advanced developers to access Axios functionality directly when the API Sutra abstraction is not sufficient.
 
 ---
 
-## Example Project Structure
+# How It Works
+
+```text
+createApiClient(config)
+        │
+        ▼
+ Validate base URL
+        │
+        ▼
+   Create Axios client
+        │
+        ▼
+ Configure headers
+        │
+        ▼
+ Add authentication
+        │
+        ▼
+ Configure interceptors
+        │
+        ▼
+ ┌───────────────────────┐
+ │  api.get()            │
+ │  api.post()           │
+ │  api.put()            │
+ │  api.patch()          │
+ │  api.delete()         │
+ │  api.request()        │
+ └───────────┬───────────┘
+             │
+             ▼
+       Normalize path
+             │
+             ▼
+       Axios request
+             │
+        ┌────┴────┐
+        ▼         ▼
+     Success    Failure
+        │         │
+        ▼         ▼
+ response.data  ApiSutraError
+```
+
+API Sutra provides a small abstraction over Axios while keeping Axios functionality available underneath.
+
+---
+
+# Project Structure
+
+A typical application using API Sutra can be structured like:
 
 ```text
 your-project/
-
+│
 ├── src/
 │   ├── components/
 │   ├── pages/
 │   └── services/
+│       └── api.js
 │
 ├── .env
 ├── package.json
 └── ...
 ```
 
-A centralized API client can be placed inside:
-
-```text
-src/services/api.js
-```
-
-Example:
-
-```js
-import { createApiClient } from "master-api-url";
-
-const api = createApiClient({
-  baseURL: import.meta.env.VITE_API_URL,
-});
-
-export default api;
-```
-
-Then anywhere in your application:
-
-```js
-import api from "./services/api";
-
-const users = await api.get("/users");
-```
-
 ---
 
-## Development
+# Development
 
 Clone the repository:
 
 ```bash
-git clone https://github.com/pasiabhishek/master-api-url.git
+git clone https://github.com/pasiabhishek/api-sutra.git
 ```
 
 Move into the project:
 
 ```bash
-cd master-api-url
+cd api-sutra
 ```
 
 Install dependencies:
@@ -808,9 +1044,46 @@ npm run test:watch
 
 ---
 
-## Build
+# Testing
 
-The package currently exports its source directly from:
+API Sutra uses **Vitest** for testing.
+
+Run the complete test suite:
+
+```bash
+npm test
+```
+
+Run Vitest in watch mode:
+
+```bash
+npm run test:watch
+```
+
+The test suite covers:
+
+* Base URL validation
+* API path validation
+* Axios client creation
+* GET requests
+* POST requests
+* PUT requests
+* PATCH requests
+* DELETE requests
+* Custom request configuration
+* Path normalization
+* Authentication tokens
+* Token updates
+* Token clearing
+* Interceptors
+* Error normalization
+* Legacy `getApiUrl()` support
+
+---
+
+# Build
+
+API Sutra currently exports its source directly:
 
 ```text
 src/index.js
@@ -818,7 +1091,7 @@ src/index.js
 
 No separate compilation step is required.
 
-Run the test suite with:
+Run the test suite before publishing:
 
 ```bash
 npm test
@@ -826,7 +1099,7 @@ npm test
 
 ---
 
-## Publishing
+# Publishing
 
 Login to npm:
 
@@ -834,51 +1107,52 @@ Login to npm:
 npm login
 ```
 
-Check your npm account:
+Check the logged-in account:
 
 ```bash
 npm whoami
 ```
 
-Before publishing, check what will be included:
+Check the files that will be published:
 
 ```bash
 npm pack --dry-run
 ```
 
-Publish the package:
+Publish:
 
 ```bash
 npm publish
 ```
 
-For a new patch release:
+For future releases:
+
+### Patch
 
 ```bash
 npm version patch
-```
-
-For a new minor release:
-
-```bash
-npm version minor
-```
-
-For the new `createApiClient()` API, use a major version if this is a breaking change:
-
-```bash
-npm version major
-```
-
-Then publish:
-
-```bash
 npm publish
 ```
 
+### Minor
+
+```bash
+npm version minor
+npm publish
+```
+
+### Major
+
+```bash
+npm version major
+npm publish
+```
+
+Use a major version when introducing breaking API changes.
+
 ---
 
-## Requirements
+# Requirements
 
 * Node.js 18+
 * npm 9+
@@ -888,7 +1162,7 @@ npm publish
 
 ---
 
-## License
+# License
 
 This project is licensed under the **MIT License**.
 
@@ -896,48 +1170,55 @@ See the `LICENSE` file for details.
 
 ---
 
-## Author
+# Author
 
 **Pasi Abhishek**
 
 * GitHub: [@pasiabhishek](https://github.com/pasiabhishek)
-* npm: [master-api-url](https://www.npmjs.com/package/master-api-url)
+* npm: [api-sutra](https://www.npmjs.com/package/api-sutra)
 
 ---
 
-## Repository
+# Repository
 
 GitHub:
 
-https://github.com/pasiabhishek/master-api-url
+https://github.com/pasiabhishek/api-sutra
 
 ---
 
-## Why master-api-url?
+# Why API Sutra?
 
 Axios is already a powerful HTTP client.
 
-`master-api-url` doesn't try to replace Axios.
+**API Sutra does not try to replace Axios.**
 
-Instead, it provides a simpler API layer on top of Axios for applications that want:
+Instead, it provides a small reusable layer for applications that want:
 
-* One reusable API configuration
+* One centralized API configuration
 * Cleaner endpoint calls
-* Built-in authentication configuration
-* Consistent request methods
+* Automatic path normalization
+* Built-in Bearer authentication
+* Runtime token management
+* Consistent HTTP methods
 * Standardized errors
-* Less repetitive API code
+* Request and response interceptors
+* Less repetitive API configuration
+* Direct access to Axios when needed
 
-Instead of:
+Without API Sutra:
 
 ```js
 axios.get(`${BASE_URL}/users`);
+
 axios.post(`${BASE_URL}/users`, data);
+
 axios.put(`${BASE_URL}/users/1`, data);
+
 axios.delete(`${BASE_URL}/users/1`);
 ```
 
-you can use:
+With API Sutra:
 
 ```js
 const api = createApiClient({
@@ -945,9 +1226,18 @@ const api = createApiClient({
 });
 
 api.get("/users");
+
 api.post("/users", data);
+
 api.put("/users/1", data);
+
 api.delete("/users/1");
 ```
 
-**Simple API requests. One reusable client. Built on Axios.**
+---
+
+## API Sutra
+
+**Simple API requests.
+One reusable client.
+Built on Axios.**

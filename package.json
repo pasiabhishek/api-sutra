@@ -1,58 +1,64 @@
-
 {
-  "name": "master-api-url",
-  "version": "2.0.0",
-  "description": "A lightweight Axios-based API client for making simple and reusable HTTP requests.",
+  "name": "api-sutra",
+  "version": "3.0.1",
+  "description": "A lightweight and reusable API client wrapper for making clean HTTP requests with Axios.",
   "keywords": [
     "api",
-    "axios",
     "api-client",
     "http-client",
     "http",
     "rest-api",
     "rest-client",
-    "api-fetch",
+    "axios",
     "javascript",
+    "typescript",
     "react",
     "vite",
     "node",
     "request",
-    "fetch",
-    "json"
+    "fetch-wrapper",
+    "axios-wrapper"
   ],
-  "homepage": "https://github.com/pasiabhishek/master-api-url#readme",
+  "homepage": "https://github.com/pasiabhishek/api-sutra#readme",
   "bugs": {
-    "url": "https://github.com/pasiabhishek/master-api-url/issues"
+    "url": "https://github.com/pasiabhishek/api-sutra/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pasiabhishek/master-api-url.git"
+    "url": "git+https://github.com/pasiabhishek/api-sutra.git"
   },
   "license": "MIT",
   "author": "Pasi Abhishek",
   "type": "module",
+
   "main": "./src/index.js",
   "module": "./src/index.js",
+
   "exports": {
     ".": {
       "import": "./src/index.js"
     }
   },
+
   "files": [
     "src",
     "README.md",
     "LICENSE"
   ],
+
   "scripts": {
     "test": "vitest",
     "test:watch": "vitest --watch"
   },
+
   "dependencies": {
     "axios": "^1.12.2"
   },
+
   "devDependencies": {
     "vitest": "^3.2.4"
   },
+
   "engines": {
     "node": ">=18"
   }
